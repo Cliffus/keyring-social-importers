@@ -190,8 +190,8 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 				// Track which Keyring service was used
 				wp_set_object_terms( $post_id, self::LABEL, 'keyring_services' );
 
-				// Mark it as a link
-				set_post_format( $post_id, 'link' );
+				// Mark it as a standard post format
+				set_post_format( $post_id, 'standard' );
 
 				// Update Category
 				wp_set_post_categories( $post_id, $post_category );
