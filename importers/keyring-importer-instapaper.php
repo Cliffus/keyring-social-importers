@@ -72,7 +72,7 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 
 	function build_request_url() {
 		// Lists the user's [unread] bookmarks, and can also synchronize reading positions.
-		$url = "https://www.instapaper.com/api/1/bookmarks/list?folder_id=archive";
+		$url = "https://www.instapaper.com/api/1/bookmarks/list";
 
 		if ( $this->auto_import ) {
 			$url = add_query_arg( array( 'limit' => self::LINKS_PER_REQUEST ), $url );
