@@ -108,7 +108,7 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 			$post_title = $post->title;
 
 			// Parse/adjust dates
-			$post_date_gmt = gmdate( 'Y-m-d H:i:s', $post->progress_timestamp ); // last seen "progress"
+			$post_date_gmt = gmdate( 'Y-m-d H:i:s', $post->time );
 			$post_date     = get_date_from_gmt( $post_date_gmt );
 
 			// Apply selected category
