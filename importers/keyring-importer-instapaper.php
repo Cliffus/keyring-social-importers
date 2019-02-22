@@ -16,9 +16,6 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 	function __construct() {
 		parent::__construct();
 
-		// Look for un-processed articles to get content/text for
-		add_action( 'keyring_instapaper_import_auto', array( $this, 'download_article_texts' ) );
-
 		add_filter( 'wp_head', array( $this, 'wp_head' ), 1 );
 	}
 
@@ -119,11 +116,10 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 
 			// Construct a post body
 			$href         = $post->url;
-			$post_content = '<a href="' . $href . '" class="instapaper-title">' . $post_title . '</a>';
-			if ( ! empty( $post->description ) ) {
-				$post_content .= "\n\n<blockquote class='instapaper-note'>" . $post->description . '</blockquote>';
-			}
-
+			$post_content = $this->download_article_contents($post->bookmark_id);
+			$post_content .= '\n\nLees het volledige artikel op de website van PUBLISHER:';
+			$post_content .= '\n' . $href;
+			
 			// Other bits
 			$post_author    = $this->get_option( 'author' );
 			$post_status    = $this->get_option( 'status', 'publish' );
@@ -146,6 +142,25 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 			);
 		}
 	}
+	
+	function download_article_contents($bookmark_id) {
+
+		// Returns the specified bookmark's processed text-view HTML, which is always text/html encoded as UTF-8.
+		$endpoint = 'https://www.instapaper.com/api/1/bookmarks/get_text';
+
+		// Query Instapaper for the content of this link
+		$endpoint = add_query_arg( array( 'bookmark_id' => $bookmark_id ), $endpoint );
+		$html = $this->service->request( $endpoint, array( 'raw_response' => true ) ); // response is not JSON, so get raw HTML
+
+		// If the request failed, return an empty string
+		if ( is_wp_error( $html ) || Keyring_Util::is_error( $html ) ) {
+			
+			return "";
+		}
+
+		return $html;
+	}
+}
 
 	/**
 	 * Sorts bookmarks returned by date, newest first
@@ -216,64 +231,6 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 		// Return, so that the handler can output info (or update DB, or whatever)
 		return array( 'imported' => $imported, 'skipped' => $skipped );
 	}
-
-	// Download article content in batches, and store in post-meta/custom field
-	function download_article_texts() {
-
-		// Returns the specified bookmark's processed text-view HTML, which is always text/html encoded as UTF-8.
-		$endpoint = 'https://www.instapaper.com/api/1/bookmarks/get_text';
-
-		// Get posts which don't have their content downloaded yet
-		$posts = get_posts( array(
-			'posts_per_page' => 10, // Batches of 10, to avoid overloading the API/being slow
-			'post_status'    => 'publish',
-			'tax_query'      => array(
-				array(
-					'taxonomy' => 'keyring_services',
-					'field'    => 'slug',
-					'terms'    => $this->taxonomy // Only get posts imported from Instapaperper
-				)
-			),
-			'meta_query' => array(
-				'relation' => 'AND',
-				array(
-					'key'     => 'remote_content',
-					'compare' => 'NOT EXISTS' // hasn't been processed already
-				)
-			)
-		) );
-
-		// Loop through posts and request their content from the Instapaper API
-		foreach( $posts as $post ) {
-			// Get the bookmark id from the raw import data
-			$raw = get_post_meta( $post->ID, 'raw_import_data', true );
-			$raw = json_decode( $raw ); // bookmark_id
-			if ( empty( $raw->bookmark_id ) ) {
-				continue;
-			}
-
-			// Query Instapaper for the content of this link
-			$endpoint = add_query_arg( array( 'bookmark_id' => $raw->bookmark_id ), $endpoint );
-			$html = $this->service->request( $endpoint, array( 'raw_response' => true ) ); // response is not JSON, so get raw HTML
-
-			// Mark failed posts to avoid re-processing/getting stuck on them
-			if ( is_wp_error( $html ) || Keyring_Util::is_error( $html ) ) {
-				update_post_meta( $post->ID, 'remote_content', false );
-				continue;
-			}
-
-			// Flag the post as being processed
-			update_post_meta( $post->ID, 'remote_content', true );
-
-			// Append the content to the post itself, and update. We save it in the post itself
-			// to make sure it's found in searches.
-			// Wrapping in a special HTML comment to make parsing it out a bit more explicit
-			$post->post_content .= "\n<!--more-->\n\n" . '<!--remote-content--><div class="remote-content instapaper">' . $html . '</div><!--/remote-content-->';
-			wp_update_post( $post );
-			// @todo Sideload media from post (store images locally, update internal references)
-		}
-	}
-}
 
 } // end function Keyring_Instapaper_Importer
 
