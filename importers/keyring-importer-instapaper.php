@@ -230,6 +230,7 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 		// Return, so that the handler can output info (or update DB, or whatever)
 		return array( 'imported' => $imported, 'skipped' => $skipped );
 	}
+}
 
 } // end function Keyring_Instapaper_Importer
 
