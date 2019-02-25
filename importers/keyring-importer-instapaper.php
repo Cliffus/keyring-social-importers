@@ -26,7 +26,7 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 		}
 
 		// Force noindex on pages that (potentially) contain imported content, to avoid SEO problems
-		if ( has_term( Vars::SLUG, 'keyring_services', get_queried_object() ) ) {
+		if ( has_term( self::SLUG, 'keyring_services', get_queried_object() ) ) {
 			echo '<meta name="robots" content="noindex,follow" >';
 		}
 	}
