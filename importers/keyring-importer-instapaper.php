@@ -117,8 +117,8 @@ class Keyring_Instapaper_Importer extends Keyring_Importer_Base {
 			// Construct a post body
 			$href         = $post->url;
 			$post_content = $this->download_article_contents($post->bookmark_id);
-			$post_content .= "\n\n<div class='pk-callout'>Lees het volledige artikel op de website van PUBLISHER:</div>";
-			$post_content .= "\n" . $href;
+			$post_content .= "\n\n<div class='pk-callout'>Lees het volledige artikel op de website van PUBLIDHER:</div>";
+			$post_content .= "\n<div><p>" . $href . "</p></div>";
 			
 			// Other bits
 			$post_author    = $this->get_option( 'author' );
